@@ -22,9 +22,11 @@ cd $BASE
 for ii in `cat $INDEX|grep sublevel-repo|cut -d' ' -f3|cut -d "'" -f2`
 do
     if [ ! -f $ii/HEAD ]; then
-      echo Adding $ii, new tree detected
-      $RM -rf $ii
-      $GIT clone --mirror $SERVERHTTP/$ii $ii
+      if [ $ii != '4' ];then
+        echo Adding $ii, new tree detected
+        $RM -rf $ii
+        $GIT clone --mirror $SERVERHTTP/$ii $ii
+      fi
     else
       echo Updating $ii
       ($CD $ii && $GIT fetch && $GIT remote prune origin)
