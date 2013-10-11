@@ -1,0 +1,43 @@
+#!/bin/bash
+
+SERVERHTTP='https://git.openstack.org/cgit'
+BASE='/git/git/upstream'
+# used this to manage the 'print only' version
+GIT="$ECHO git"
+RM="$ECHO rm"
+CD="$ECHO cd"
+
+# temp file to store the server index file
+INDEX=`mktemp`
+
+echo Starting at `date`
+
+# get the project index file
+wget -q $SERVERHTTP -O $INDEX
+cat INDEX|grep sublevel-repo|cut -d' ' -f3|cut -d "'" -f2
+mkdir -p $BASE
+cd $BASE
+
+# create new trees if needed, update existing trees
+for ii in `cat $INDEX|grep sublevel-repo|cut -d' ' -f3|cut -d "'" -f2`
+do
+    if [ ! -f $ii/HEAD ]; then
+      echo Adding $ii, new tree detected
+      $RM -rf $ii
+      $GIT clone --mirror $SERVERHTTP/$ii $ii
+    else
+      echo Updating $ii
+      ($CD $ii && $GIT fetch && $GIT remote prune origin)
+    fi
+done
+
+# clean up old trees
+for ii in `find . -name HEAD | xargs -i dirname {} | cut -c3-`
+do
+    if ! grep $ii $INDEX > /dev/null ; then
+      echo Removing $ii , no longer exist on $SERVERHTTP
+      $RM -rf $ii
+    fi
+done
+
+echo Completed at `date`
